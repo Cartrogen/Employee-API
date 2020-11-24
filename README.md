@@ -20,3 +20,9 @@ First Name
 Last Name
 Contact Number
 
+Sample Payload = {
+                    'first_name' : 'John',
+                    'last_name' : 'Doe',
+                    'contact_number' : '1234567'
+                 }
+
