@@ -1,0 +1,98 @@
+from flask import Flask, request
+from flask_restful import Resource, Api, reqparse, fields, marshal_with, abort
+from flask_sqlalchemy import SQLAlchemy
+
+app = Flask(__name__)
+api = Api(app)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////database.db'
+db = SQLAlchemy(app)
+
+#Parsing arguments for post
+parser_post = reqparse.RequestParser()
+parser_post.add_argument('first_name', type=str, help="Please enter employee's first name", required = True)
+parser_post.add_argument('last_name', type=str, help="Please enter employee's last name", required = True)
+parser_post.add_argument('contact_number', type=int, help="Please enter employee's contact number", required = True)
+
+#Parsing arguments for put
+parser_put = reqparse.RequestParser()
+parser_put.add_argument('first_name', type=str, help="Please enter employee's first name")
+parser_put.add_argument('last_name', type=str, help="Please enter employee's last name")
+parser_put.add_argument('contact_number', type=int, help="Please enter employee's contact number")
+
+
+#Dictionary containing employee information 
+Employees = {}
+
+#marshalling fields
+resource_fields = {
+                    'id' : fields.Integer,
+                    'first_name' : fields.String,
+                    'last_name' : fields.String,
+                    'contact_number' : fields.Integer
+                  }
+
+#Creating the db
+class Employee_Database(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    first_name = db.Column(db.String(100), nullable = False)
+    last_name = db.Column(db.String(100), nullable = False)
+    contact_number = db.Column(db.String(100), nullable = False)
+	
+    def __repr__(self):
+        return "Employee name is {}, contact number is {}".format(name, contact_number)
+        
+db.drop_all()
+db.create_all()
+
+#Creating the API
+class Employee_Information(Resource):
+
+    @marshal_with(resource_fields)
+    def get(self, emp_id):
+        employee = Employee_Database.query.filter_by(id = emp_id).first()
+        if not employee:
+            abort(404, message = "Employee id {} does not exist. Please check the id and try again".format(emp_id))
+        return employee, 200
+
+    @marshal_with(resource_fields)
+    def post(self, emp_id):
+        duplicate_employee = Employee_Database.query.filter_by(id = emp_id).first()
+        if duplicate_employee:
+            abort(409, message = "Employee ID - {} already exists. Please select another ID, thank you!".format(emp_id))
+        args = parser_post.parse_args()
+        employee_created = Employee_Database(id = emp_id, first_name = args['first_name'], last_name = args['last_name'], contact_number = args['contact_number'])
+        db.session.add(employee_created)
+        db.session.commit()
+        return Employee_Database.query.all()
+        
+    @marshal_with(resource_fields)
+    def put(self, emp_id):
+        args = parser_put.parse_args()
+        employee = Employee_Database.query.filter_by(id = emp_id).first()
+        if not employee:
+            abort(404, message = "Employee id {} does not exist. Please check the id and try again".format(emp_id))
+        if args['first_name']:
+                employee.first_name = args['first_name']
+        if args['last_name']:
+                employee.last_name = args['last_name']
+        if args['contact_number']:
+                employee.contact_number = args['contact_number']
+        db.session.commit()
+        return employee, 200
+    
+    @marshal_with(resource_fields)
+    def delete(self, emp_id):
+        search_employee = Employee_Database.query.filter_by(id = emp_id).first()
+        if not search_employee:
+            abort(404, message = "Employee id {} does not exist. Please check the id and try again".format(emp_id))
+        db.session.delete(search_employee)
+        db.session.commit()
+        return Employee_Database.query.all()
+
+#Registering the URL and the endpoint    
+api.add_resource(Employee_Information, '/employee_information/<int:emp_id>')
+			
+
+if __name__ == '__main__':
+	app.run(debug=True)
+	
