@@ -3,7 +3,7 @@ An API that connects to the employee database
 
 URL: http://127.0.0.1:5000/
 Endpoint: /employee_information/<int:emp_id>
-The endpoint has a mandatory value which is the employee id
+The endpoint has a mandatory integer value, emp_id which is the employee id
 
 The API is built using flask Restful. 
 Following are the requests that it can accept:
